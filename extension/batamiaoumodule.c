@@ -8,20 +8,21 @@
 #define BATAMIAOU_N 36
 #define BATAMIAOU_HALF_N 18
 #define BATAMIAOU_ERROR_END -999999
-#define BATAMIAOU_PLAYER_1 1
-#define BATAMIAOU_PLAYER_2 2
+#define BATAMIAOU_PLAYER_1 0b00000001
+#define BATAMIAOU_PLAYER_2 0b00000010
+#define DISCARD_PILE 0b00000100
 
 typedef struct
 {
-    int deck[BATAMIAOU_N];
+    unsigned char deck[BATAMIAOU_N];
     int player_cards[2];
 } BatamiaouGame;
 
-static int batamiaou_shuffle(BatamiaouGame *game, int player)
+static int batamiaou_shuffle(BatamiaouGame *game, char player)
 {
     for (int i = 0; i < BATAMIAOU_N; i++)
     {
-        if (game->deck[i] == -player)
+        if (game->deck[i] == (DISCARD_PILE | player))
         {
             game->deck[i] = player;
             game->player_cards[player - 1] += 1;
@@ -30,7 +31,7 @@ static int batamiaou_shuffle(BatamiaouGame *game, int player)
     return game->player_cards[player - 1];
 }
 
-static int batamiaou_get_card_index(BatamiaouGame *game, int player)
+static int batamiaou_get_card_index(BatamiaouGame *game, char player)
 {
     if (game->player_cards[player - 1] <= 0)
     {
@@ -59,7 +60,7 @@ static int batamiaou_get_card_index(BatamiaouGame *game, int player)
     return BATAMIAOU_ERROR_END;
 }
 
-static void batamiaou_get_card(BatamiaouGame *game, int player, int *index, int *value)
+static void batamiaou_get_card(BatamiaouGame *game, char player, int *index, int *value)
 {
     int const card_index = batamiaou_get_card_index(game, player);
     if (card_index == BATAMIAOU_ERROR_END)
@@ -76,15 +77,15 @@ static void batamiaou_get_card(BatamiaouGame *game, int player, int *index, int 
     return;
 }
 
-static void batamiaou_win(BatamiaouGame *game, int i0, int i1, int player)
+static void batamiaou_win(BatamiaouGame *game, int i0, int i1, char player)
 {
-    game->deck[i0] = -player;
-    game->deck[i1] = -player;
+    game->deck[i0] = DISCARD_PILE | player;
+    game->deck[i1] = DISCARD_PILE | player;
     for (int i = 0; i < BATAMIAOU_N; i++)
     {
         if (game->deck[i] == 0)
         {
-            game->deck[i] = -player;
+            game->deck[i] = DISCARD_PILE | player;
         }
     }
 }
@@ -225,14 +226,35 @@ PyBatamiaouGame_play(PyBatamiaouGame *self, PyObject *Py_UNUSED(ignored))
 // .deck() method
 static PyObject *PyBatamiaouGame_deck(PyBatamiaouGame *self, PyObject *Py_UNUSED(ignored))
 {
-    return PyBytes_FromStringAndSize((const char *)(&(self->game.deck[0])), sizeof(int) * BATAMIAOU_N);
+    return PyBytes_FromStringAndSize((const char *)(&(self->game.deck[0])), sizeof(char) * BATAMIAOU_N);
+}
+
+// .mask_deck() method
+static PyObject *PyBatamiaouGame_mask_deck(PyBatamiaouGame *self, PyObject *args)
+{
+    long int sum = 0; // use long because python does
+    unsigned char mask;
+
+    // Convert a nonnegative Python integer to an unsigned tiny integer, stored in a C unsigned char.
+    if (!PyArg_ParseTuple(args, "b", &mask))
+    {
+        return NULL;
+    }
+
+    for (int i = 0; i < BATAMIAOU_N; i++)
+    {
+        sum += (self->game.deck[i] & mask) ? 1 : 0;
+    }
+
+    return PyLong_FromLong(sum);
 }
 
 static PyMethodDef PyBatamiaouGame_methods[] = {
-    {"reset", (PyCFunction)PyBatamiaouGame_reset, METH_VARARGS | METH_KEYWORDS, "reset(seed=None)\n\nReset the game (reinitialize the deck). Optionally provide a seed."},
-    {"play", (PyCFunction)PyBatamiaouGame_play, METH_NOARGS, "play()\n\nRun a single round of the game"},
+    {"reset", (PyCFunction)PyBatamiaouGame_reset, METH_VARARGS | METH_KEYWORDS, "reset(seed=None) -> None\n\nReset the game (reinitialize the deck). Optionally provide a seed."},
+    {"play", (PyCFunction)PyBatamiaouGame_play, METH_NOARGS, "play() -> int|None\n\nRun a single round of the game and returns the player who won (or None if the game stops)"},
     {"run", (PyCFunction)PyBatamiaouGame_run, METH_NOARGS, "run() -> int\n\nRun the whole game and return the number of rounds played"},
     {"deck", (PyCFunction)PyBatamiaouGame_deck, METH_NOARGS, "deck() -> bytes\n\nRead the deck as a bytes buffer"},
+    {"mask_deck", (PyCFunction)PyBatamiaouGame_mask_deck, METH_VARARGS, "mask_deck(mask: int) -> int\n\nCount the number of cards in the deck that match the given mask. "},
     {NULL} /* Sentinel */
 };
 
@@ -283,5 +305,10 @@ PyInit_cbatamiaou(void)
         return NULL;
     }
     PyModule_AddObject(m, "BatamiaouGame", batamiaou_game_type);
+    // Integer constant
+    PyModule_AddIntConstant(m, "PLAYER_1", BATAMIAOU_PLAYER_1);
+    PyModule_AddIntConstant(m, "PLAYER_2", BATAMIAOU_PLAYER_2);
+    PyModule_AddIntConstant(m, "DISCARD_PILE", DISCARD_PILE);
+    PyModule_AddIntConstant(m, "SIZE", BATAMIAOU_N);
     return m;
 }

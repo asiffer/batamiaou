@@ -1,7 +1,7 @@
 [project]
 name = "batamiaou"
 version = "0.1.0"
-description = "Add your description here"
+description = "Simulator of the child variant of the War card game"
 readme = "README.md"
 requires-python = ">=3.6"
 dependencies = []
