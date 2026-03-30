@@ -1,6 +1,14 @@
 # batamiaou
 
+[![Test](https://github.com/asiffer/batamiaou/actions/workflows/test.yml/badge.svg)](https://github.com/asiffer/batamiaou/actions/workflows/test.yml)
+
 Battle game simulator
+
+## Introduction
+
+[Bata-Miaou](https://www.djeco.com/en/reference/DJ05104) (or similarly Bata-Waf) is a child variant of the "War" card game where there is actually no strategy to win (players can’t do anything).
+
+This project implements a game simulator through a python C extension ([limited C API](https://docs.python.org/3/c-api/stable.html#limited-c-api)).
 
 ## Installation
 
@@ -16,6 +24,7 @@ from batamiaou import BatamiaouGame
 # create a new game instance
 game = BatamiaouGame()
 # run a whole game (it stops when a player has no more cards)
+# and returns the number of rounds
 rounds = game.run()
 # reset the game
 game.reset()
