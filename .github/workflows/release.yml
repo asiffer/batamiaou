@@ -31,6 +31,12 @@ jobs:
 
       - name: Build package 
         run: uv build
+
+      - name: Fix platform tags
+        run: |
+          uv run auditwheel repair dist/*.whl
+          rm -f dist/*.whl
+          mv wheelhouse/*.whl dist/
       
       - name: Publish
         run: uv publish

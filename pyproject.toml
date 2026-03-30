@@ -10,6 +10,11 @@ dependencies = []
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
+[dependency-groups]
+dev = [
+    "auditwheel>=5.3.0",
+]
+
 [project.optional-dependencies]
 dev = ["ipython"]
 test = ["numpy", "hypothesis", "batamiaou"]
