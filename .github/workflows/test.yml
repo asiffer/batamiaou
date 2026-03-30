@@ -1,20 +1,15 @@
-name: Release
+name: Test
 
 on:
   workflow_dispatch:
   push:
-    tags:
-      - "v*"
+    branches:
+      - master
 
 jobs:
-  publish:
-    name: Build & Publish to PyPI
+  test:
+    name: Run tests
     runs-on: ubuntu-latest
-    environment:
-      name: pypi
-    permissions:
-      id-token: write
-      contents: read
     steps:
       - uses: actions/checkout@v6
 
@@ -29,8 +24,5 @@ jobs:
       - name: Install the project
         run: uv sync --locked --all-extras --dev
 
-      - name: Build package 
-        run: uv build
-      
-      - name: Publish
-        run: uv publish
+      - name: Test batamiaou 
+        run: uv run test.py
